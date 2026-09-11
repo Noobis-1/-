@@ -148,7 +148,8 @@
 </div>
 
 <script>
-    const SERVER_URL = 'http://localhost:3000';
+    // 엣지/크롬 로컬 차단을 방지하기 위해 127.0.0.1로 수정
+    const SERVER_URL = 'http://127.0.0.1:3000';
 
     function togglePassword() {
         const passwordInput = document.getElementById('password');
@@ -196,7 +197,7 @@
                 document.getElementById('verifyBtn').classList.remove('hidden');
             }
         } catch (error) {
-            alert('서버와 통신할 수 없습니다. 백엔드 서버 실행 여부를 확인하세요.');
+            alert('서버와 통신할 수 없습니다. 터미널에서 node server.js 실행 여부를 확인하세요.');
         }
     }
 
