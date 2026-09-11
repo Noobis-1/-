@@ -92,11 +92,13 @@
             color: #38a169;
             min-height: 18px;
         }
+
+        /* 요소 숨김 기본 클래스 (!important 추가하여 브라우저 강제 숨김) */
         .hidden {
-            display: none;
+            display: none !important;
         }
 
-        /* 결과 모달(새 창) 레이어 스타일 */
+        /* 결과 모달 레이어 스타일 */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -128,7 +130,6 @@
             padding: 15px;
             margin: 15px 0;
             text-align: left;
-            /* 텍스트 긁기(드래그) 방지 */
             user-select: none;
             -webkit-user-select: none;
         }
@@ -183,8 +184,8 @@
     </form>
 </div>
 
-<!-- 인증 성공 시 열리는 결과 화면 (모달) -->
-<div class="modal-overlay hidden" id="resultModal">
+<!-- inline style로 display:none을 직접 부여하여 초기 실행 시 무조건 숨김 -->
+<div class="modal-overlay hidden" id="resultModal" style="display: none;">
     <div class="modal-card">
         <h3>🔑 인증 성공</h3>
         <div class="info-box">
@@ -253,14 +254,15 @@
         }
 
         if (inputCode === issuedCode) {
-            targetPassword = password; // 비밀번호 저장
+            targetPassword = password;
             
-            // 모달 화면 데이터 바인딩
             document.getElementById('displayEmail').innerText = email;
             document.getElementById('displayPassword').innerText = password ? password : '(저장된 비밀번호 없음)';
             
             // 모달 열기
-            document.getElementById('resultModal').classList.remove('hidden');
+            const modal = document.getElementById('resultModal');
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
             showStatus('인증 완료!', '#38a169');
         } else {
             showStatus('인증 코드가 일치하지 않습니다.', '#e53e3e');
@@ -278,7 +280,9 @@
     }
 
     function closeModal() {
-        document.getElementById('resultModal').classList.add('hidden');
+        const modal = document.getElementById('resultModal');
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
     }
 
     function handleSubmit(e) {
