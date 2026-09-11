@@ -22,13 +22,13 @@
             width: 340px;
         }
         h2 {
-            margin: 0 0 20px 0;
+            margin: 0 0 25px 0;
             text-align: center;
             color: #1a1a1a;
             font-size: 22px;
         }
         .input-group {
-            margin-bottom: 15px;
+            margin-bottom: 18px;
             position: relative;
         }
         label {
@@ -41,14 +41,36 @@
         input {
             width: 100%;
             padding: 12px;
+            padding-right: 75px;
             border: 1px solid #cbd5e0;
             border-radius: 6px;
             box-sizing: border-box;
             font-size: 14px;
             outline: none;
+            transition: border-color 0.2s;
         }
         input:focus {
             border-color: #3182ce;
+        }
+        .btn-group-inline {
+            position: absolute;
+            right: 8px;
+            top: 29px;
+            display: flex;
+            gap: 4px;
+        }
+        .icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 15px;
+            padding: 4px 6px;
+            border-radius: 4px;
+            color: #718096;
+        }
+        .icon-btn:hover {
+            background-color: #edf2f7;
+            color: #2d3748;
         }
         .btn-stack {
             display: flex;
@@ -66,6 +88,10 @@
             font-size: 15px;
             font-weight: 600;
             cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .main-btn:hover {
+            background-color: #2b6cb0;
         }
         .sub-btn {
             width: 100%;
@@ -77,6 +103,10 @@
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .sub-btn:hover {
+            background-color: #cbd5e0;
         }
         .hidden {
             display: none;
@@ -97,64 +127,113 @@
         <div class="input-group">
             <label for="password">비밀번호</label>
             <input type="password" id="password" name="password" autocomplete="current-password" placeholder="비밀번호 입력" required>
+            <div class="btn-group-inline">
+                <button type="button" class="icon-btn" onclick="togglePassword()" title="비밀번호 보기">👁️</button>
+                <button type="button" class="icon-btn" onclick="copyPassword()" title="비밀번호 복사">📋</button>
+            </div>
         </div>
 
-        <!-- 인증코드 입력란 (초기에는 숨김 처리) -->
         <div class="input-group hidden" id="codeGroup">
-            <label for="authCode">발급된 인증 코드</label>
-            <input type="text" id="authCode" placeholder="인증 코드 입력">
+            <label for="authCode">이메일 인증 코드</label>
+            <input type="text" id="authCode" placeholder="인증 코드 6자리 입력" style="padding-right: 12px;">
         </div>
 
         <div class="btn-stack">
-            <button type="button" class="sub-btn" onclick="requestAuth()">🔑 인증 코드 입력 단계로</button>
-            <button type="button" class="sub-btn hidden" id="verifyBtn" onclick="verifyAndAutofill()">코드 검증 후 불러오기</button>
-            <button type="submit" class="main-btn">비밀번호 저장 / 제출</button>
+            <button type="button" class="sub-btn" id="sendBtn" onclick="sendEmailCode()">📩 인증 코드 이메일 전송</button>
+            <button type="button" class="sub-btn hidden" id="verifyBtn" onclick="verifyCode()">🔑 코드 확인 및 비번 불러오기</button>
+            <button type="submit" class="main-btn">비밀번호 저장 제출</button>
+            <button type="button" class="sub-btn" onclick="clearFields()">초기화</button>
         </div>
     </form>
 </div>
 
 <script>
-    // 임시 로컬 저장소에 저장된 코드 (실제 이메일 전송 대신 가상 검증 로직)
-    let generatedCode = null;
+    const SERVER_URL = 'http://localhost:3000';
 
-    function requestAuth() {
-        const email = document.getElementById('username').value;
-        if (!email) {
-            alert('이메일을 먼저 입력해주세요.');
-            return;
-        }
-        
-        // 6자리 가상 인증코드 생성 및 알림창 안내
-        generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
-        alert(`[가증 이메일 발송 완료]\n${email}로 인증 코드가 발송되었습니다.\n\n발급 코드: ${generatedCode}`);
-
-        // 코드 입력창 표시
-        document.getElementById('codeGroup').classList.remove('hidden');
-        document.getElementById('verifyBtn').classList.remove('hidden');
+    function togglePassword() {
+        const passwordInput = document.getElementById('password');
+        passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password';
     }
 
-    function verifyAndAutofill() {
-        const inputCode = document.getElementById('authCode').value;
+    function copyPassword() {
+        const passwordInput = document.getElementById('password');
+        if (!passwordInput.value) {
+            alert('복사할 비밀번호가 없습니다.');
+            return;
+        }
+        navigator.clipboard.writeText(passwordInput.value)
+            .then(() => alert('비밀번호가 복사되었습니다.'))
+            .catch(() => alert('복사 실패'));
+    }
 
-        if (!inputCode) {
+    function clearFields() {
+        document.getElementById('username').value = '';
+        document.getElementById('password').value = '';
+        document.getElementById('authCode').value = '';
+        document.getElementById('codeGroup').classList.add('hidden');
+        document.getElementById('verifyBtn').classList.add('hidden');
+    }
+
+    async function sendEmailCode() {
+        const email = document.getElementById('username').value;
+        if (!email) {
+            alert('이메일을 입력해주세요.');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${SERVER_URL}/api/send-code`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+
+            const result = await response.json();
+            alert(result.message);
+
+            if (result.success) {
+                document.getElementById('codeGroup').classList.remove('hidden');
+                document.getElementById('verifyBtn').classList.remove('hidden');
+            }
+        } catch (error) {
+            alert('서버와 통신할 수 없습니다. 백엔드 서버 실행 여부를 확인하세요.');
+        }
+    }
+
+    async function verifyCode() {
+        const email = document.getElementById('username').value;
+        const code = document.getElementById('authCode').value;
+
+        if (!code) {
             alert('인증 코드를 입력해주세요.');
             return;
         }
 
-        if (inputCode === generatedCode) {
-            alert('인증 성공! 저장된 비밀번호 항목을 선택하세요.');
-            // 브라우저 포커스를 이동시켜 자동완성 레이어 유도
-            const passInput = document.getElementById('password');
-            passInput.type = 'text'; // 인증 완료 시 비밀번호를 텍스트로 보이기
-            passInput.focus();
-        } else {
-            alert('인증 코드가 일치하지 않습니다.');
+        try {
+            const response = await fetch(`${SERVER_URL}/api/verify-code`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, code })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                alert('인증 완료! 저장된 비밀번호 항목을 선택하세요.');
+                const passInput = document.getElementById('password');
+                passInput.type = 'text';
+                passInput.focus();
+                passInput.click();
+            } else {
+                alert(result.message);
+            }
+        } catch (error) {
+            alert('인증 확인 중 오류가 발생했습니다.');
         }
     }
 
     function handleSubmit(e) {
         e.preventDefault();
-        alert('입력 완료! 브라우저의 [비밀번호 저장] 팝업을 확인하세요.');
     }
 </script>
 
