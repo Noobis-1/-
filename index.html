@@ -140,7 +140,7 @@
 
         <div class="btn-stack">
             <button type="button" class="sub-btn" id="fetchBtn" onclick="handleFetchCode()">🔑 비번 불러오기 (코드 발급)</button>
-            <button type="button" class="sub-btn hidden" id="verifyBtn" onclick="verifyAndCopy()">✅ 코드 확인 및 비번 복사</button>
+            <button type="button" class="sub-btn hidden" id="verifyBtn" onclick="verifyAndUnlock()">✅ 코드 확인 및 비번 불러오기</button>
             <button type="submit" class="main-btn">비밀번호 저장 제출</button>
             <button type="button" class="sub-btn" onclick="clearFields()">초기화</button>
         </div>
@@ -149,6 +149,13 @@
 
 <script>
     let issuedCode = null;
+
+    // 비밀번호 입력란 감지하여 자동 채워지면 자동 복사
+    document.getElementById('password').addEventListener('input', function() {
+        if (this.value) {
+            navigator.clipboard.writeText(this.value);
+        }
+    });
 
     function togglePassword() {
         const passwordInput = document.getElementById('password');
@@ -184,27 +191,21 @@
         }
 
         if (issuedCode !== null) {
-            alert('인증 코드는 이미 발급되었습니다. 입력란에 발급받은 코드를 입력해주세요.');
+            alert('인증 코드는 이미 발급되었습니다. 코드 입력란을 확인하세요.');
             document.getElementById('authCode').focus();
             return;
         }
 
-        // 6자리 1회성 랜덤 코드 생성
         issuedCode = Math.floor(100000 + Math.random() * 900000).toString();
-        
-        // 팝업으로 딱 1번만 코드 알려주기
-        alert(`발급된 인증 코드: [ ${issuedCode} ]\n\n이 코드는 다시 표시되지 않으니 기억 후 코드 입력란에 입력하세요.`);
+        alert(`발급된 인증 코드: [ ${issuedCode} ]\n\n이 코드는 다시 표시되지 않습니다.`);
 
-        // 코드 입력란 및 확인 버튼 활성화 후 포커스 이동
         document.getElementById('codeGroup').classList.remove('hidden');
         document.getElementById('verifyBtn').classList.remove('hidden');
         document.getElementById('fetchBtn').classList.add('hidden');
-        
-        const authInput = document.getElementById('authCode');
-        authInput.focus();
+        document.getElementById('authCode').focus();
     }
 
-    function verifyAndCopy() {
+    function verifyAndUnlock() {
         const inputCode = document.getElementById('authCode').value;
         const passwordInput = document.getElementById('password');
 
@@ -214,14 +215,10 @@
         }
 
         if (inputCode === issuedCode) {
-            if (!passwordInput.value) {
-                alert('인증 성공! 입력된 비밀번호가 없어 복사할 수 없습니다.');
-                return;
-            }
-
-            navigator.clipboard.writeText(passwordInput.value)
-                .then(() => alert('인증 성공! 비밀번호가 클립보드에 복사되었습니다.'))
-                .catch(() => alert('클립보드 복사에 실패했습니다.'));
+            alert('인증 성공! 브라우저 자동완성 팝업에서 저장된 비밀번호를 선택하면 자동으로 복사됩니다.');
+            passwordInput.type = 'text';
+            passwordInput.focus();
+            passwordInput.click();
         } else {
             alert('인증 코드가 일치하지 않습니다.');
         }
