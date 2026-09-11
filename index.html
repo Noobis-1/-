@@ -22,13 +22,13 @@
             width: 340px;
         }
         h2 {
-            margin: 0 0 25px 0;
+            margin: 0 0 20px 0;
             text-align: center;
             color: #1a1a1a;
             font-size: 22px;
         }
         .input-group {
-            margin-bottom: 18px;
+            margin-bottom: 15px;
             position: relative;
         }
         label {
@@ -41,42 +41,20 @@
         input {
             width: 100%;
             padding: 12px;
-            padding-right: 75px;
             border: 1px solid #cbd5e0;
             border-radius: 6px;
             box-sizing: border-box;
             font-size: 14px;
             outline: none;
-            transition: border-color 0.2s;
         }
         input:focus {
             border-color: #3182ce;
-        }
-        .btn-group-inline {
-            position: absolute;
-            right: 8px;
-            top: 29px;
-            display: flex;
-            gap: 4px;
-        }
-        .icon-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 15px;
-            padding: 4px 6px;
-            border-radius: 4px;
-            color: #718096;
-        }
-        .icon-btn:hover {
-            background-color: #edf2f7;
-            color: #2d3748;
         }
         .btn-stack {
             display: flex;
             flex-direction: column;
             gap: 10px;
-            margin-top: 25px;
+            margin-top: 20px;
         }
         .main-btn {
             width: 100%;
@@ -88,10 +66,6 @@
             font-size: 15px;
             font-weight: 600;
             cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        .main-btn:hover {
-            background-color: #2b6cb0;
         }
         .sub-btn {
             width: 100%;
@@ -103,72 +77,84 @@
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            transition: background-color 0.2s;
         }
-        .sub-btn:hover {
-            background-color: #cbd5e0;
+        .hidden {
+            display: none;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>비밀번호 확인</h2>
+    <h2>비밀번호 저장 / 불러오기</h2>
     <form id="loginForm" onsubmit="handleSubmit(event)">
-        <div class="input-group">
-            <label for="username">아이디 / 이메일</label>
-            <input type="text" id="username" name="username" autocomplete="username" placeholder="아이디 입력" required>
-        </div>
         
+        <div class="input-group">
+            <label for="username">이메일 계정</label>
+            <input type="email" id="username" name="username" autocomplete="username" placeholder="example@email.com" required>
+        </div>
+
         <div class="input-group">
             <label for="password">비밀번호</label>
             <input type="password" id="password" name="password" autocomplete="current-password" placeholder="비밀번호 입력" required>
-            <div class="btn-group-inline">
-                <button type="button" class="icon-btn" onclick="togglePassword()" title="비밀번호 보기">👁️</button>
-                <button type="button" class="icon-btn" onclick="copyPassword()" title="비밀번호 복사">📋</button>
-            </div>
+        </div>
+
+        <!-- 인증코드 입력란 (초기에는 숨김 처리) -->
+        <div class="input-group hidden" id="codeGroup">
+            <label for="authCode">발급된 인증 코드</label>
+            <input type="text" id="authCode" placeholder="인증 코드 입력">
         </div>
 
         <div class="btn-stack">
-            <button type="button" class="sub-btn" onclick="triggerAutofill()">🔑 저장된 비번 불러오기</button>
+            <button type="button" class="sub-btn" onclick="requestAuth()">🔑 인증 코드 입력 단계로</button>
+            <button type="button" class="sub-btn hidden" id="verifyBtn" onclick="verifyAndAutofill()">코드 검증 후 불러오기</button>
             <button type="submit" class="main-btn">비밀번호 저장 / 제출</button>
-            <button type="button" class="sub-btn" onclick="clearFields()">초기화</button>
         </div>
     </form>
 </div>
 
 <script>
-    function togglePassword() {
-        const passwordInput = document.getElementById('password');
-        passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password';
-    }
+    // 임시 로컬 저장소에 저장된 코드 (실제 이메일 전송 대신 가상 검증 로직)
+    let generatedCode = null;
 
-    function copyPassword() {
-        const passwordInput = document.getElementById('password');
-        if (!passwordInput.value) {
-            alert('복사할 비밀번호가 없습니다.');
+    function requestAuth() {
+        const email = document.getElementById('username').value;
+        if (!email) {
+            alert('이메일을 먼저 입력해주세요.');
             return;
         }
-        navigator.clipboard.writeText(passwordInput.value)
-            .then(() => alert('비밀번호가 클립보드에 복사되었습니다.'))
-            .catch(() => alert('복사에 실패했습니다.'));
+        
+        // 6자리 가상 인증코드 생성 및 알림창 안내
+        generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
+        alert(`[가증 이메일 발송 완료]\n${email}로 인증 코드가 발송되었습니다.\n\n발급 코드: ${generatedCode}`);
+
+        // 코드 입력창 표시
+        document.getElementById('codeGroup').classList.remove('hidden');
+        document.getElementById('verifyBtn').classList.remove('hidden');
     }
 
-    function clearFields() {
-        document.getElementById('username').value = '';
-        document.getElementById('password').value = '';
-    }
+    function verifyAndAutofill() {
+        const inputCode = document.getElementById('authCode').value;
 
-    // 브라우저의 저장된 계정 목록 창을 강제로 활성화
-    function triggerAutofill() {
-        const usernameInput = document.getElementById('username');
-        usernameInput.focus();
-        usernameInput.click();
+        if (!inputCode) {
+            alert('인증 코드를 입력해주세요.');
+            return;
+        }
+
+        if (inputCode === generatedCode) {
+            alert('인증 성공! 저장된 비밀번호 항목을 선택하세요.');
+            // 브라우저 포커스를 이동시켜 자동완성 레이어 유도
+            const passInput = document.getElementById('password');
+            passInput.type = 'text'; // 인증 완료 시 비밀번호를 텍스트로 보이기
+            passInput.focus();
+        } else {
+            alert('인증 코드가 일치하지 않습니다.');
+        }
     }
 
     function handleSubmit(e) {
         e.preventDefault();
-        alert('입력 완료! 브라우저 상단(또는 주소창 우측 열쇠 아이콘)의 비밀번호 저장 팝업을 확인하세요.');
+        alert('입력 완료! 브라우저의 [비밀번호 저장] 팝업을 확인하세요.');
     }
 </script>
 
