@@ -114,7 +114,8 @@
 
 <div class="container">
     <h2>비밀번호 확인</h2>
-    <form action="#" method="POST" id="loginForm">
+    <!-- onsubmit으로 자바스크립트를 실행해 405 에러 방지 -->
+    <form id="loginForm" onsubmit="handleSubmit(event)">
         <div class="input-group">
             <label for="username">아이디 / 이메일</label>
             <input type="text" id="username" name="username" autocomplete="username" placeholder="아이디 입력" required>
@@ -156,6 +157,11 @@
     function clearFields() {
         document.getElementById('username').value = '';
         document.getElementById('password').value = '';
+    }
+
+    function handleSubmit(e) {
+        e.preventDefault(); // 405 에러가 발생하는 페이지 이동을 차단
+        alert('입력 완료! 브라우저 상단(또는 주소창 우측 열쇠 아이콘)의 비밀번호 저장 팝업을 확인하세요.');
     }
 </script>
 
