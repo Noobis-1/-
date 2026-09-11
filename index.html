@@ -108,7 +108,6 @@
         .sub-btn:hover {
             background-color: #cbd5e0;
         }
-        /* 버튼 아래 표시될 메시지 스타일 */
         .status-msg {
             margin-top: 15px;
             font-size: 13px;
@@ -149,24 +148,17 @@
 
         <div class="btn-stack">
             <button type="button" class="sub-btn" id="fetchBtn" onclick="handleFetchCode()">🔑 비번 불러오기 (코드 발급)</button>
-            <button type="button" class="sub-btn hidden" id="verifyBtn" onclick="verifyAndUnlock()">✅ 코드 확인 및 비번 불러오기</button>
+            <button type="button" class="sub-btn hidden" id="verifyBtn" onclick="verifyAndAutofill()">✅ 코드 확인 및 비번 채우기</button>
             <button type="submit" class="main-btn">비밀번호 저장 제출</button>
             <button type="button" class="sub-btn" onclick="clearFields()">초기화</button>
         </div>
 
-        <!-- 버튼 아래 안내 문구 영역 -->
         <div class="status-msg" id="statusMsg"></div>
     </form>
 </div>
 
 <script>
     let issuedCode = null;
-
-    document.getElementById('password').addEventListener('input', function() {
-        if (this.value) {
-            navigator.clipboard.writeText(this.value);
-        }
-    });
 
     function togglePassword() {
         const passwordInput = document.getElementById('password');
@@ -218,9 +210,10 @@
         showStatus('인증 코드를 입력해주세요.', '#3182ce');
     }
 
-    function verifyAndUnlock() {
+    function verifyAndAutofill() {
         const inputCode = document.getElementById('authCode').value;
         const passwordInput = document.getElementById('password');
+        const usernameInput = document.getElementById('username');
 
         if (!inputCode) {
             showStatus('인증 코드를 입력해주세요.', '#e53e3e');
@@ -228,22 +221,24 @@
         }
 
         if (inputCode === issuedCode) {
-            showStatus('인증 성공! 저장 항목을 클릭하면 자동 복사됩니다.', '#38a169');
+            showStatus('인증 성공! 아래 브라우저 팝업에서 계정을 선택하세요.', '#38a169');
+            
+            // 1. 비밀번호 입력란을 텍스트 유형으로 변경
             passwordInput.type = 'text';
-            passwordInput.focus();
-            passwordInput.click();
+            
+            // 2. 이메일/비밀번호 필드를 자극해 브라우저 자동완성 팝업 강제 트리거
+            usernameInput.focus();
+            usernameInput.click();
         } else {
             showStatus('인증 코드가 일치하지 않습니다.', '#e53e3e');
         }
     }
 
-    // 제출 시 팝업 대신 버튼 밑에 성공 문구 표시
     function handleSubmit(e) {
         e.preventDefault();
         showStatus('✅ 비밀번호 저장 요청이 완료되었습니다!', '#38a169');
     }
 
-    // 버튼 밑 텍스트 출력 함수
     function showStatus(msg, color) {
         const statusEl = document.getElementById('statusMsg');
         statusEl.style.color = color;
