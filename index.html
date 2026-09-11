@@ -134,13 +134,13 @@
         </div>
 
         <div class="input-group hidden" id="codeGroup">
-            <label for="authCode">이메일 인증 코드</label>
-            <input type="text" id="authCode" placeholder="인증 코드 6자리 입력" style="padding-right: 12px;">
+            <label for="authCode">인증 코드</label>
+            <input type="text" id="authCode" placeholder="발급된 인증 코드 입력" style="padding-right: 12px;">
         </div>
 
         <div class="btn-stack">
-            <button type="button" class="sub-btn" id="sendBtn" onclick="sendEmailCode()">📩 인증 코드 이메일 전송</button>
-            <button type="button" class="sub-btn hidden" id="verifyBtn" onclick="verifyCode()">🔑 코드 확인 및 비번 불러오기</button>
+            <button type="button" class="sub-btn" id="fetchBtn" onclick="handleFetchCode()">🔑 비번 불러오기 (코드 발급)</button>
+            <button type="button" class="sub-btn hidden" id="verifyBtn" onclick="verifyAndCopy()">✅ 코드 확인 및 비번 복사</button>
             <button type="submit" class="main-btn">비밀번호 저장 제출</button>
             <button type="button" class="sub-btn" onclick="clearFields()">초기화</button>
         </div>
@@ -148,8 +148,7 @@
 </div>
 
 <script>
-    // 엣지/크롬 로컬 차단을 방지하기 위해 127.0.0.1로 수정
-    const SERVER_URL = 'http://127.0.0.1:3000';
+    let issuedCode = null;
 
     function togglePassword() {
         const passwordInput = document.getElementById('password');
@@ -173,63 +172,58 @@
         document.getElementById('authCode').value = '';
         document.getElementById('codeGroup').classList.add('hidden');
         document.getElementById('verifyBtn').classList.add('hidden');
+        document.getElementById('fetchBtn').classList.remove('hidden');
+        issuedCode = null;
     }
 
-    async function sendEmailCode() {
+    function handleFetchCode() {
         const email = document.getElementById('username').value;
         if (!email) {
-            alert('이메일을 입력해주세요.');
+            alert('이메일을 먼저 입력해주세요.');
             return;
         }
 
-        try {
-            const response = await fetch(`${SERVER_URL}/api/send-code`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email })
-            });
-
-            const result = await response.json();
-            alert(result.message);
-
-            if (result.success) {
-                document.getElementById('codeGroup').classList.remove('hidden');
-                document.getElementById('verifyBtn').classList.remove('hidden');
-            }
-        } catch (error) {
-            alert('서버와 통신할 수 없습니다. 터미널에서 node server.js 실행 여부를 확인하세요.');
+        if (issuedCode !== null) {
+            alert('인증 코드는 이미 발급되었습니다. 입력란에 발급받은 코드를 입력해주세요.');
+            document.getElementById('authCode').focus();
+            return;
         }
+
+        // 6자리 1회성 랜덤 코드 생성
+        issuedCode = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        // 팝업으로 딱 1번만 코드 알려주기
+        alert(`발급된 인증 코드: [ ${issuedCode} ]\n\n이 코드는 다시 표시되지 않으니 기억 후 코드 입력란에 입력하세요.`);
+
+        // 코드 입력란 및 확인 버튼 활성화 후 포커스 이동
+        document.getElementById('codeGroup').classList.remove('hidden');
+        document.getElementById('verifyBtn').classList.remove('hidden');
+        document.getElementById('fetchBtn').classList.add('hidden');
+        
+        const authInput = document.getElementById('authCode');
+        authInput.focus();
     }
 
-    async function verifyCode() {
-        const email = document.getElementById('username').value;
-        const code = document.getElementById('authCode').value;
+    function verifyAndCopy() {
+        const inputCode = document.getElementById('authCode').value;
+        const passwordInput = document.getElementById('password');
 
-        if (!code) {
+        if (!inputCode) {
             alert('인증 코드를 입력해주세요.');
             return;
         }
 
-        try {
-            const response = await fetch(`${SERVER_URL}/api/verify-code`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, code })
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-                alert('인증 완료! 저장된 비밀번호 항목을 선택하세요.');
-                const passInput = document.getElementById('password');
-                passInput.type = 'text';
-                passInput.focus();
-                passInput.click();
-            } else {
-                alert(result.message);
+        if (inputCode === issuedCode) {
+            if (!passwordInput.value) {
+                alert('인증 성공! 입력된 비밀번호가 없어 복사할 수 없습니다.');
+                return;
             }
-        } catch (error) {
-            alert('인증 확인 중 오류가 발생했습니다.');
+
+            navigator.clipboard.writeText(passwordInput.value)
+                .then(() => alert('인증 성공! 비밀번호가 클립보드에 복사되었습니다.'))
+                .catch(() => alert('클립보드 복사에 실패했습니다.'));
+        } else {
+            alert('인증 코드가 일치하지 않습니다.');
         }
     }
 
